@@ -143,7 +143,7 @@ def RidgeRegressionExperiments(lambda_regs):
 
 
 def FitShootingLasso(X, y, lambda_reg, starting_theta):
-    '''2.1.1'''
+    '''Problem 2.1.1'''
     # Function Constants
     converged_distance = 10**-3 # totally arbitrary convergence definition
     max_iterations = 1000 # Aribrary limit to ensure this doesn't run forever
@@ -171,8 +171,40 @@ def FitShootingLasso(X, y, lambda_reg, starting_theta):
         iteration += 1
 #    print 'theta distance', theta_distance, 'converged distance', converged_distance
 #    print 'iterations until convergence', iteration
-    if iteration == max_iterations:
-        print 'Maximum iterations reached while calculating shooting lasso for lambda %f, stopping optimization.' % (lambda_reg)
+#    if iteration == max_iterations:
+#        print 'Maximum iterations reached while calculating shooting lasso for lambda %f, stopping optimization.' % (lambda_reg)
+    return theta
+
+
+def FitShootingLassoVectorized(X, y, lambda_reg, starting_theta):
+    '''Problem 2.1.5'''
+    # Function Constants
+    converged_distance = 10**-3 # totally arbitrary convergence definition
+    max_iterations = 2000 # Aribrary limit to ensure this doesn't run forever # TODO
+    num_rows = X.shape[0]
+    num_features = X.shape[1]
+
+    # Iteration variables
+    theta = starting_theta
+    theta_distance = None
+    iteration = 0
+
+    XX2 = 2 * np.dot(X.T, X)
+    Xy2 = 2 * np.dot(X.T, y)
+
+    while (theta_distance is None or theta_distance > converged_distance) and iteration < max_iterations:
+        old_theta = np.copy(theta)
+        for j in range(num_features):
+            a_j = XX2[j, j]
+            c_j = Xy2[j] - sum(np.dot(XX2[j, :], theta)) + XX2[j, j]*theta[j]
+            a = c_j/a_j
+            theta[j] = np.sign(a) * np.max(abs(a) - lambda_reg/a_j, 0.0)
+        theta_distance = linalg.norm(theta - old_theta)
+        iteration += 1
+#    print 'theta distance', theta_distance, 'converged distance', converged_distance
+#    print 'iterations until convergence', iteration
+#    if iteration == max_iterations:
+#        print 'Maximum iterations reached while calculating shooting lasso for lambda %f, stopping optimization.' % (lambda_reg)
     return theta
 
 
@@ -190,8 +222,11 @@ def printThetaComparisionInfo(true_theta, best_theta):
     print 'Number of true non-zeros (10 or -10):', num_true_non_zeros, 'out of 10'
 
         
-def PlotValidationLossAgainstLambdas(X, y, true_theta, lambda_regs):
+def PlotValidationLossAgainstLambdas(X, y, true_theta, lambda_regs, plot_results=True, use_vectorized=False):
     X_training, y_training, X_validation, y_validation, X_testing, y_testing = PartitionDataset(X, y)
+
+    # Record start time for speed comparison
+    before_time = time.time()
 
     # These are used to calculate the starting theta value
     XTX = np.dot(X.T, X)
@@ -204,8 +239,12 @@ def PlotValidationLossAgainstLambdas(X, y, true_theta, lambda_regs):
 
     for lambda_reg in lambda_regs:
         starting_theta = np.dot(linalg.inv(XTX + np.dot(lambda_reg, np.identity(X.shape[1]))), XTy)
-        theta = FitShootingLasso(X_training, y_training, lambda_reg, starting_theta)
-        validation_loss = compute_loss(X_validation, y_validation, theta)
+        assert starting_theta.shape == (X.shape[1], 1)
+        if use_vectorized:
+            theta = FitShootingLassoVectorized(X_training, y_training, lambda_reg, starting_theta)
+        else:
+            theta = FitShootingLasso(X_training, y_training, lambda_reg, theta)
+        validation_loss = compute_loss(X_validation, y_validation, starting_theta)
 
         validation_losses.append(validation_loss)
 
@@ -214,63 +253,64 @@ def PlotValidationLossAgainstLambdas(X, y, true_theta, lambda_regs):
             best_lambda_reg = lambda_reg
             best_theta = theta
 
+    final_time = time.time() - before_time
+    print 'Shooting Lasso regularization path computed in %.05f' % (final_time)
+
     testing_loss = compute_loss(X_testing, y_testing, best_theta)
     print 'best lambda: %f, testing loss: %f' % (best_lambda_reg, testing_loss)
 
     printThetaComparisionInfo(true_theta, best_theta)
 
-    fig, ax = plt.subplots()
-    ax.set_xlabel('log10 of Regularization Constant (Lambda)')
-    ax.set_ylabel('log10 of Validation Loss')
-    ax.set_title('Shooting Algorithm: Lambda vs. Loss')    
-    lambda_powers = [math.log(lambda_reg, 10) for lambda_reg in lambda_regs]
-    plt.xticks(lambda_powers)
-    plt.plot(lambda_powers,
-             [math.log(loss, 10) for loss in validation_losses])
-    plt.show()
+    if plot_results:
+        fig, ax = plt.subplots()
+        ax.set_xlabel('log10 of Regularization Constant (Lambda)')
+        ax.set_ylabel('log10 of Validation Loss')
+        ax.set_title('Shooting Algorithm: Lambda vs. Loss')    
+        lambda_powers = [math.log(lambda_reg, 10) for lambda_reg in lambda_regs]
+        plt.xticks(lambda_powers)
+        plt.plot(lambda_powers,
+                 [math.log(loss, 10) for loss in validation_losses])
+        plt.show()
 
 
-def ShootingHomotopy(X, y, true_theta):
-    X_training, y_training, X_validation, y_validation, X_testing, y_testing = PartitionDataset(X, y)
-
-    mean_y = np.mean(y_training, axis=0)
+def CalculateFullRegularizationPath(X_validation, y_validation):
+    mean_y = np.mean(y_training, axis=0) # TODO remove this per the instructions?
     lambda_reg_inf = linalg.norm(np.dot(X_training.T, y_training - mean_y), np.inf)
     print 'lambda_reg_inf', lambda_reg_inf
+    lambda_regs = [lambda_reg_inf / 10.0**i for i in range(0, 6)] + [0.0] 
+    return lambda_regs
 
-    # TODO we're supposed to keep going until the validation (test?) error gets to zero, but I'm doing 6 iterations, tops.
-    lambda_regs = [lambda_reg_inf / 10.0**i for i in range(0, 6)]
+
+def ShootingHomotopy(X, y, true_theta, lambda_regs, use_vectorized=False):
+    X_training, y_training, X_validation, y_validation, X_testing, y_testing = PartitionDataset(X, y)
+
+    # Record start time for speed comparison
+    before_time = time.time()
+
     theta = np.zeros(true_theta.shape)
-
-    stopping_validation_loss_diff = 10**-3 # TODO arbitrary
-    smallest_validation_loss = None
-    best_lambda_reg = None
     best_theta = None
 
-    iteration = 0
-    validation_loss = None
+    smallest_validation_loss = None
 
-    # TODO check that this stopping criteria is correct
-    # TODO figure out what the two things we're supposed to compare in terms of running speed
-    # TODO since theta is updated every iteration, maybe it doesn't make sense to choose teh best. maybe we should just choose the last one.
-    # TODO at the moment, this doesn't work at all
-    while (iteration < len(lambda_regs) and
-           (smallest_validation_loss is None 
-            or abs(validation_loss - smallest_validation_loss) > stopping_validation_loss_diff)):
-        lambda_reg = lambda_regs[iteration]
-        theta = FitShootingLasso(X_training, y_training, lambda_reg, theta)
+    # TODO Should we keep the last theta, or the best theta?
+    for lambda_reg in lambda_regs:
+        if use_vectorized:
+            theta = FitShootingLassoVectorized(X_training, y_training, lambda_reg, theta)
+        else:
+            theta = FitShootingLasso(X_training, y_training, lambda_reg, theta)
         validation_loss = compute_loss(X_validation, y_validation, theta)
-
-        if smallest_validation_loss is None or validation_loss < smallest_validation_loss:
-            smallest_validation_loss = validation_loss
-            best_lambda_reg = lambda_reg
+#        print 'lambda_reg %f, validation loss: %f' % (lambda_reg, validation_loss)
+        if best_theta is None or validation_loss < smallest_validation_loss:
             best_theta = theta
+            smallest_validation_loss = validation_loss
 
-        iteration += 1
+    final_time = time.time() - before_time
+    print 'Homotophy regularization path computed in %.05f' % (final_time)
 
     testing_loss = compute_loss(X_testing, y_testing, best_theta)
-    print 'best lambda: %f, testing loss: %f' % (best_lambda_reg, testing_loss)
+    print 'testing loss: %f' % (testing_loss)
 
-    printThetaComparisionInfo(true_theta, best_theta)
+    printThetaComparisionInfo(true_theta, theta)
     
 
 if __name__ == '__main__':
@@ -278,6 +318,10 @@ if __name__ == '__main__':
     X = RandomDesignMatrix()
     true_theta = RandomSparseThetaVector()
     y = ComputeNoiseyResponseVector(X, true_theta)
+    X_training, y_training, X_validation, y_validation, X_testing, y_testing = PartitionDataset(X, y)
 #    lambda_regs = [10**i for i in range(-4, 2)]
-#    PlotValidationLossAgainstLambdas(X, y, true_theta, lambda_regs)
-    ShootingHomotopy(X, y, true_theta)
+    lambda_regs = CalculateFullRegularizationPath(X_validation, y_validation)
+    PlotValidationLossAgainstLambdas(X, y, true_theta, lambda_regs, plot_results=False,use_vectorized=True)
+    ShootingHomotopy(X, y, true_theta, lambda_regs,use_vectorized=True)
+
+
