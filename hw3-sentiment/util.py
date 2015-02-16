@@ -1,3 +1,7 @@
+# Homework 3 - hw3.py
+# Alex Pine
+# 2015/02/15
+
 ## Taken from http://web.stanford.edu/class/cs221/ Assignment #2 Support Code
 
 def dotProduct(d1, d2):
@@ -9,7 +13,7 @@ def dotProduct(d1, d2):
     if len(d1) < len(d2):
         return dotProduct(d2, d1)
     else:
-        return sum(d1.get(f, 0) * v for f, v in d2.items())
+        return sum(d1.get(f, 0) * v for f, v in d2.iteritems())
 
 def increment(d1, scale, d2):
     """
@@ -18,6 +22,10 @@ def increment(d1, scale, d2):
     @param float scale
     @param dict d2: a feature vector.
     """
-    for f, v in d2.items():
+    for f, v in d2.iteritems():
         d1[f] = d1.get(f, 0) + v * scale
 
+# TODO comments
+def scale(d1, scale):
+    for f, v in d1.iteritems():
+        d1[f] = d1[f] * scale
