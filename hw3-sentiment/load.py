@@ -81,7 +81,7 @@ def SplitAndSparsifyXY(shuffled_labeled_reviews):
 
 def PartitionData(X, y):
     '''Code for question 2.1.'''
-    NUM_TRAINING_ROWS = 500 # 1500 TODO TODO TODO
+    NUM_TRAINING_ROWS = 1500
     X_training = X[:NUM_TRAINING_ROWS]
     y_training = y[:NUM_TRAINING_ROWS]
     X_testing = X[NUM_TRAINING_ROWS:]

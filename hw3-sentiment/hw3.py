@@ -67,6 +67,7 @@ def SparseGradChecker(loss_func, gradient_loss_func, x, y_val, theta, epsilon=0.
 
 
 def PegasosLoss(x, y_val, theta, lambda_reg):
+    '''Question 3.2: The Pegasos Loss function.'''
     reg_term = lambda_reg * util.dotProduct(theta, theta) / 2.0
     margin = y_val * util.dotProduct(theta, x)
     loss_term = max(0.0, 1 - margin)
@@ -74,60 +75,57 @@ def PegasosLoss(x, y_val, theta, lambda_reg):
         
 
 def PegasosSubgradientLoss(x, y_val, theta, lambda_reg):
+    '''Question 3.2: The Subgradient of the Pegasos Loss function.'''
     margin = y_val * util.dotProduct(theta, x)
-    subgrad = theta.copy() # TODO untested
+    subgrad = theta.copy()
     util.scale(subgrad, lambda_reg)
     if margin < 1:
         util.increment(subgrad, -y_val, x)
     return subgrad
 
 
-def Pegasos(X, y, lambda_reg, max_epochs=50, check_gradient=False, fast_method=False):
+def Pegasos(X, y, lambda_reg, max_epochs=1000, check_gradient=False):
     '''Question 4.2.
-    
-    TODO write comments
+    Finds the sparse weight vector that minimizes the SVM loss function on X and y.
     '''
-    print 'Pegasos with regularization parameter', lambda_reg
+    print 'Running Pegasos with regularization parameter', lambda_reg
     loss_func = lambda x, y_val, theta: PegasosLoss(x, y_val, theta, lambda_reg)
     gradient_loss_func = lambda x, y_val, theta: PegasosSubgradientLoss(x, y_val, theta, lambda_reg)
 
     # Initialize theta to have zero for every word mentioned in any review
     theta = {key: 0.0 for x in X for key in x.keys()}
-    t = 0
+    t = 2 # NOTE: This normally starts at zero, but that causes a divide-by-zero error.
+    weight_scalar = 1.0 
 
     for epoch in range(max_epochs):
-        print '--Epoch', epoch
-        # TODO copy the previous version of theta, then take the difference at the end to see if you can stop iterating?
+#        print '--Epoch', epoch
         old_theta = theta.copy()
         for j, x in enumerate(X):
             t += 1
             eta = 1.0 / (t * lambda_reg)
-            if fast_method:
-                # NOTE: This way is closer to the implemention described in the assignment. 
-                # It's also faster than the version that computes the gradient explicitly, 
-                # since it doesn't have to copy theta. However, you can't check the gradient
-                # this way.
-                margin = y[j] * util.dotProduct(theta, x)
-                util.scale(theta, 1 - eta * lambda_reg)
-                if margin < 1:
-                    util.increment(theta, eta * y[j], x)
-            else:
-                if check_gradient and not SparseGradChecker(loss_func, gradient_loss_func, x, y[j], theta): 
+            margin = y[j] * weight_scalar * util.dotProduct(theta, x)
+            # NOTE that the gradient is not differentiable at 1.0, so we don't check it near there.
+            if check_gradient and abs(margin-1.0) > 0.01:
+                if SparseGradChecker(loss_func, gradient_loss_func, x, y[j], theta): 
                     print 'Computed gradient doesn\'t match approximations.'
                     sys.exit(1)
                 grad = gradient_loss_func(x, y[j], theta)
                 util.increment(theta, -eta, grad)
+            else:
+                weight_scalar *= 1.0 - 1.0/t
+                if margin < 1:
+                    util.increment(theta, eta * y[j]/weight_scalar, x)
         util.increment(old_theta, -1, theta)
+        util.scale(old_theta, weight_scalar)
         total_change = math.sqrt(util.dotProduct(old_theta, old_theta))
-        print '----Change from previous theta:', total_change
-        if total_change < 1.0: # TODO this seems large, but I can't wait all day
+#        print '----Change from previous theta:', total_change
+        if total_change < 0.01:
             break
+    util.scale(theta, weight_scalar)
     return theta
 
-
-# TODO is this right?
 def PercentageWrong(X, y, theta):
-    '''Question 4.3.'''
+    '''Question 4.3: The percentage incorrect when using theta to predict y from X.'''
     num_wrong = 0
     for i, x in enumerate(X):
         estimate_sign = np.sign(util.dotProduct(theta, x))
@@ -135,13 +133,17 @@ def PercentageWrong(X, y, theta):
             num_wrong += 1
     return 1.0 * num_wrong / len(y)
         
-
-def FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing):
+# best_lambda_reg 1e-05 smallest_loss 0.182
+# Another run had best_lambda_reg 1e-05 smallest_loss 0.162
+def FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing,
+                                    lower_bound_power, upper_bound_power):
     '''Question 4.4.
-    TODO write comments
+    Finds the regularization parameter that results in the smallest test loss by
+    searching between the given powers of ten.
+    That is, it finds the best regularization parameter between 10^lower_bound_power and 
+    10^upper_bound_power.
     '''
-    # TODO they use a tiny lambda (10^-5) in the paper, but when I use one, it takes many epochs
-    big_lambda_regs = [10.0**i for i in range(-2, 2)] # NOTE this list must have at least two elements
+    big_lambda_regs = [10.0**i for i in range(lower_bound_power, upper_bound_power)]
     assert len(big_lambda_regs) >= 2
     print 'Searching for best regularization parameters within:', big_lambda_regs
     best_lambda_reg_index = -1
@@ -149,7 +151,7 @@ def FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing
     smallest_loss = None
     second_smallest_loss = None
     for index, lambda_reg in enumerate(big_lambda_regs):
-        theta = Pegasos(X_training, y_training, lambda_reg, fast_method=True)
+        theta = Pegasos(X_training, y_training, lambda_reg)
         loss = PercentageWrong(X_testing, y_testing, theta)
         print 'Regularization Parameter of', lambda_reg, 'produced loss of', loss
         if not smallest_loss or loss < smallest_loss:
@@ -174,7 +176,7 @@ def FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing
     smallest_loss = None
 
     for lambda_reg in small_lambda_regs:
-        theta = Pegasos(X_training, y_training, lambda_reg, fast_method=True)
+        theta = Pegasos(X_training, y_training, lambda_reg)
         loss = PercentageWrong(X_testing, y_testing, theta)
         print 'Regularization Parameter of', lambda_reg, 'produced loss of', loss
         if not smallest_loss or loss < smallest_loss:
@@ -184,71 +186,69 @@ def FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing
 
 
 def PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lambda_reg):
+    '''Question 4.5.
+    Divides the training set into buckets by score, and creates a bar chart showing the accuracy of
+    each bucket.
+    '''
     NUM_BUCKETS = 10
 
-    theta = Pegasos(X_training, y_training, lambda_reg, fast_method=True)
+    theta = Pegasos(X_training, y_training, lambda_reg)
     # Calculate the score for each row in a list
     scores = [util.dotProduct(theta, x) for x in X_testing]
-
+    
     low_score = min(scores)
     high_score = max(scores)
 
     # f(score) -> bucket
     score_to_bucket_func = lambda score: int(round((NUM_BUCKETS-1) * (score - low_score) / (high_score - low_score)))
-    # f(bucket) -> score # TODO not sure about this...
-    bucket_to_score_func = lambda bucket: int(round(bucket * (high_score - low_score) / (NUM_BUCKETS-1) + low_score))
 
     # Make a list of empty lists with NUM_BUCKETS elements
     # Each entry is a list of the indexes of X's rows that fall in the same score bucket.
-    score_histogram = [[]]*NUM_BUCKETS
-     
+    score_histogram = [[] for _ in range(NUM_BUCKETS)]
     for row_index, score in enumerate(scores):
-        score_histogram[score_to_bucket_func(score)].append(row_index)
+        bucket = score_to_bucket_func(score)
+        score_histogram[bucket].append(row_index)
 
     bucket_means = [0.0]*NUM_BUCKETS
-    bucket_losses = [0.0]*NUM_BUCKETS
+    bucket_accuracy = [0.0]*NUM_BUCKETS
 
     for bucket, row_indices in enumerate(score_histogram):
     # calculate the percentage wrong loss for each bucket
     # make a scatter plot of these
         bucket_scores = [scores[row_index] for row_index in row_indices]
-        bucket_score_mean = np.mean(bucket_scores)
+        bucket_score_mean = abs(np.mean(bucket_scores))
         bucket_means[bucket] = bucket_score_mean
         bucket_score_std = np.std(bucket_scores)
-        print 'Bucket', bucket, 'ranges from', min(bucket_scores), 'to', max(bucket_scores)
-        print 'Bucket', bucket, 'mean:', bucket_score_mean
-        print 'Bucket', bucket, 'stdev:', bucket_score_std
-        # TODO
-#        assert score_to_bucket_func(min(bucket_scores)) == score_to_bucket_func(max(bucket_scores))    
+#        print 'Bucket', bucket, 'ranges from', min(bucket_scores), 'to', max(bucket_scores)
+#        print 'Bucket', bucket, 'mean:', bucket_score_mean
+#        print 'Bucket', bucket, 'stdev:', bucket_score_std
         X_bucket = [X_testing[row_index] for row_index in row_indices]
         y_bucket = [y_testing[row_index] for row_index in row_indices]
-        loss = PercentageWrong(X_bucket, y_bucket, theta)
-        bucket_losses[bucket] = loss
+        bucket_accuracy[bucket] = 100*(1.0 - PercentageWrong(X_bucket, y_bucket, theta) )
 
     fig, ax = plt.subplots()
-    ax.set_xlabel('Mean Score for Bucket') # TODO maybe make the x label be the mean score for the bucket?
-    ax.set_ylabel('Percentage Wrong')
-    ax.set_title('Pegasos Sentiment Analysis: Score vs. Loss')    
-    plt.xticks(bucket_means)
-    plt.plot(bucket_means, bucket_losses)
+    ax.set_xlabel('Mean Score for Bucket')
+    ax.set_ylabel('Percentage Correct')
+    ax.set_title('Pegasos Sentiment Analysis: Score vs. Accuracy')
+    width = 0.4
+    positions = range(0, len(bucket_accuracy))
+    rects1 = ax.bar(positions, bucket_accuracy, width, color='b', alpha=0.8)
+    plt.xticks(rotation=-45)
+    ax.set_xticks([pos + width for pos in positions])
+    ax.set_xticklabels(["%0.1f" % mean for mean in bucket_means])
     plt.show()
+
+
 
 
 def main():
     X_training, y_training, X_testing, y_testing = load.LoadData()
 #    print 'running pegasos'
 #    Pegasos(X_training, y_training, 0.01, max_epochs=30, check_gradient=True)
-#    FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing)
-    PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, 0.01) # TODO even smaller lambdas are better, but they take forever to converge
+#    FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing, -8, -2)
+    lambda_reg = 10**-5
+    PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lambda_reg)
 
-    # TODO write up subgradient answer for question 4.1
-    # TODO 4.4 Find the real best lambda_reg for question 4.4. The paper suggests it's 10^-.5
-    #  - Use a smaller convergence threshold in Pegasos, and use the REAL data size split.
-    # TODO 4.5 Fix: PlotScoresAgainstAccuracy.
-    #  - It doesn't work! Every bucket has the whole range of scores!
-    #  - use the best lambda and real data split
-    #  - use more/fewer buckets
-    #  - write up answer
     # TODO 5 error analysis
     # TODO 6 find a new feature that improves error
 
