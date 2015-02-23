@@ -22,13 +22,13 @@ def folder_list(path,label):
     PARAMETER PATH IS THE PATH OF YOUR LOCAL FOLDER
     '''
     filelist = os.listdir(path)
-    review = []
+    reviews = []
     for infile in filelist:
         file = os.path.join(path,infile)
         r = read_data(file)
         r.append(label)
-        review.append(r)
-    return review
+        reviews.append(r)
+    return reviews
 
 def read_data(file):
     '''
@@ -53,17 +53,16 @@ def shuffle_data():
     pos_path = POS_REVIEWS_PATH
     neg_path = NEG_REVIEWS_PATH
 	
-    pos_review = folder_list(pos_path, 1)
-    neg_review = folder_list(neg_path, -1)
+    pos_reviews = folder_list(pos_path, 1)
+    neg_reviews = folder_list(neg_path, -1)
 	
-    review = pos_review + neg_review
-    random.shuffle(review)
-    return review
+    reviews = pos_reviews + neg_reviews
+    random.shuffle(reviews)
+    return reviews
 
 
 def SplitAndSparsifyXY(shuffled_labeled_reviews):
-    '''
-    Code for question 3.1.
+    '''Code for question 3.1.
     Splits output of shuffle_data into X and Y matrices.
     Args:
       Matrix that is the output of shuffle_data()
@@ -79,6 +78,45 @@ def SplitAndSparsifyXY(shuffled_labeled_reviews):
     return X, y
 
 
+def AddPositiveNegativeWordFeatures(X, y):
+    '''Problem 6.1.
+    Adds two new features to the training data matrix X: the number of 
+    "positive" words and the number of "negative" words. Whether a word is
+    "positive" or "negative" is determined by how often a word is mentioned
+    in a positive or negative review, respectively.
+    '''
+    overall_word_counts = collections.Counter()
+    positive_word_counts = collections.Counter()
+    for x_row, y_val in zip(X, y):
+        words = set(x_row.keys())
+        overall_word_counts.update(words)
+        if y_val > 0:
+            positive_word_counts.update(words)
+    RATIO_THRESHOLD = 0.9
+    MIN_COUNT = 4
+    positive_words = set([word for word, overall_count in overall_word_counts.iteritems()
+                          if overall_word_counts[word] >= MIN_COUNT 
+                          and 1.0*positive_word_counts[word]/overall_count >= RATIO_THRESHOLD])
+    negative_words = set([word for word, overall_count in overall_word_counts.iteritems()
+                          if overall_word_counts[word] >= MIN_COUNT 
+                          and 1.0*(overall_count-positive_word_counts[word])/overall_count >= RATIO_THRESHOLD])
+    print 'Number of different "positive" words:', len(positive_words)
+    print 'Number of different "negative" words:', len(negative_words)
+#    print 'positive words:', sorted(positive_words)
+#    print 'negative words:', sorted(negative_words)
+
+    perc_nonzero = 0.0
+    for x_row in X:
+        x_row['num_positive_words'] = len([word for word in x_row.iterkeys() 
+                                           if word in positive_words])
+        x_row['num_negative_words'] = len([word for word in x_row.iterkeys()
+                                           if word in negative_words])
+        if x_row['num_positive_words'] > 0 or x_row['num_negative_words'] > 0:
+            perc_nonzero += 1.0
+    perc_nonzero = 100.0 * perc_nonzero / len(X)
+    print 'Percentage with a num_positive_words or num_negative_words score:', perc_nonzero
+
+
 def PartitionData(X, y):
     '''Code for question 2.1.'''
     NUM_TRAINING_ROWS = 1500
@@ -91,7 +129,7 @@ def PartitionData(X, y):
     return X_training, y_training, X_testing, y_testing
 	
 
-def LoadData():
+def LoadData(add_extra_features=False):
     '''Code for question 2.1 and 3.1.'''
     if not os.path.isfile(PICKLE_FILE_PATH):
         print 'Pickle file not found, loading raw data...'
@@ -102,6 +140,8 @@ def LoadData():
     shuffled_labeled_reviews = pickle.load(open(PICKLE_FILE_PATH, 'rb'))
 
     X, y = SplitAndSparsifyXY(shuffled_labeled_reviews)
+    if add_extra_features:
+        AddPositiveNegativeWordFeatures(X, y)
     X_training, y_training, X_testing, y_testing = PartitionData(X, y)
     assert len(X_training) == len(y_training)
     assert len(X_testing) == len(y_testing)

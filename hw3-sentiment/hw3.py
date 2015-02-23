@@ -241,7 +241,8 @@ def PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lamb
 
 def PrintReviewInfo(x_row, y_val, score, theta):
     '''Question 5.1.
-    For a given review vector with an inc, prints if it's a false posi
+    For a given review vector, its label, and a weight vector, this prints debugging
+    information.
     '''
     # Create map {score -> term_list}
     term_score_terms_map = collections.defaultdict(list)
@@ -261,6 +262,7 @@ def PrintReviewInfo(x_row, y_val, score, theta):
         for term in terms:
             print term, ', count:', x_row[term], ', weight:', theta.get(term, 0.0), ', term score:', term_score
     print '\n'
+
 
 def ErrorAnalysis(X_training, y_training, X_testing, y_testing, lambda_reg):
     '''Question 5.1.
@@ -284,19 +286,30 @@ def ErrorAnalysis(X_training, y_training, X_testing, y_testing, lambda_reg):
             PrintReviewInfo(x_testing_row, y_testing_val, score, theta)
             num_incorrect_examples += 1
 
-    # TODO are the weights incorrect? Are significant words given a small weight? Maybe no one word appears that often.
 
+def TestNewFeatures():
+    '''Problem 6.1'''
+    X_training, y_training, X_testing, y_testing = load.LoadData(add_extra_features=False)
+    lambda_reg = 10**-5
+    regular_theta = Pegasos(X_training, y_training, lambda_reg)
+    loss = PercentageWrong(X_testing, y_testing, regular_theta)
+    stderr = math.sqrt((1-loss)*loss/len(X_testing))
+    print 'Percentage wrong with only word-count features:', loss, 'with standard error:', stderr
+    X_training, y_training, X_testing, y_testing = load.LoadData(add_extra_features=True)
+    new_theta = Pegasos(X_training, y_training, lambda_reg)
+    loss = PercentageWrong(X_testing, y_testing, new_theta)
+    stderr = math.sqrt((1-loss)*loss/len(X_testing))
+    print 'Percentage wrong with only word-count features AND new features:', loss, 'with standard error:', stderr
+ 
 
 def main():
-    X_training, y_training, X_testing, y_testing = load.LoadData()
+#    X_training, y_training, X_testing, y_testing = load.LoadData(add_extra_features=False)
 #    theta = Pegasos(X_training, y_training, lambda_reg)
 #    FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing, -8, -2)
-    lambda_reg = 10**-5
+#    lambda_reg = 10**-5
 #    PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lambda_reg)
-    ErrorAnalysis(X_training, y_training, X_testing, y_testing, lambda_reg)    
-
-    # TODO 5 error analysis
-    # TODO 6 find a new feature that improves error
+#    ErrorAnalysis(X_training, y_training, X_testing, y_testing, lambda_reg)    
+    TestNewFeatures()
 
 if __name__ == '__main__':
     main()

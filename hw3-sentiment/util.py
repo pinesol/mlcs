@@ -25,7 +25,8 @@ def increment(d1, scale, d2):
     for f, v in d2.iteritems():
         d1[f] = d1.get(f, 0) + v * scale
 
-# TODO comments
+
 def scale(d1, scale):
+    '''Question 3.2 and 4.2: A function to scale a feature weight vector by a scalar.'''
     for f, v in d1.iteritems():
         d1[f] = d1[f] * scale
