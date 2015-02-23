@@ -239,15 +239,61 @@ def PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lamb
     plt.show()
 
 
+def PrintReviewInfo(x_row, y_val, score, theta):
+    '''Question 5.1.
+    For a given review vector with an inc, prints if it's a false posi
+    '''
+    # Create map {score -> term_list}
+    term_score_terms_map = collections.defaultdict(list)
+    for term, count in x_row.iteritems():
+        term_score = count * theta.get(term, 0.0)
+        term_score_terms_map[term_score].append(term)
+    MAX_TERMS = 500
+    if np.sign(y_val) > 0 and np.sign(score) < 0:
+        print 'False Negative Review. Score:', score
+    elif np.sign(y_val) < 0 and np.sign(score) > 0:
+        print 'False Positive Review. Score:', score
+    else:
+        print 'Correctly classified review. Score:', score
+    print ''
+    for term_score in sorted(term_score_terms_map.keys(), reverse=True, key=abs)[:MAX_TERMS]:
+        terms = term_score_terms_map[term_score]
+        for term in terms:
+            print term, ', count:', x_row[term], ', weight:', theta.get(term, 0.0), ', term score:', term_score
+    print '\n'
+
+def ErrorAnalysis(X_training, y_training, X_testing, y_testing, lambda_reg):
+    '''Question 5.1.
+    Prints information about the top incorrect reviews, ordered by the magnitude of their score.
+    '''
+    theta = Pegasos(X_training, y_training, lambda_reg)
+    scores = [util.dotProduct(theta, x) for x in X_testing]
+
+    # (index, score) pairs, sorted by the score's absolute value in descending order.
+    score_indexes = sorted(enumerate(scores), reverse=True, key=lambda index_score_pair: abs(index_score_pair[1]))
+
+    num_incorrect_examples = 0
+    MAX_NUM_WRONG_EXAMPLES = 10
+    # Print out the information about all the incorrect examples, in order of largest score.
+    for row_index, score in score_indexes:
+        if num_incorrect_examples >= MAX_NUM_WRONG_EXAMPLES:
+            break
+        y_testing_val = y_testing[row_index]
+        if np.sign(score) != np.sign(y_testing_val):
+            x_testing_row = X_testing[row_index]
+            PrintReviewInfo(x_testing_row, y_testing_val, score, theta)
+            num_incorrect_examples += 1
+
+    # TODO are the weights incorrect? Are significant words given a small weight? Maybe no one word appears that often.
 
 
 def main():
     X_training, y_training, X_testing, y_testing = load.LoadData()
-#    print 'running pegasos'
-#    Pegasos(X_training, y_training, 0.01, max_epochs=30, check_gradient=True)
+#    theta = Pegasos(X_training, y_training, lambda_reg)
 #    FindBestRegularizationParameter(X_training, y_training, X_testing, y_testing, -8, -2)
     lambda_reg = 10**-5
-    PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lambda_reg)
+#    PlotScoresAgainstAccuracy(X_training, y_training, X_testing, y_testing, lambda_reg)
+    ErrorAnalysis(X_training, y_training, X_testing, y_testing, lambda_reg)    
 
     # TODO 5 error analysis
     # TODO 6 find a new feature that improves error
