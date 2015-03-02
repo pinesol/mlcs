@@ -1,0 +1,1363 @@
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\title{Machine Learning and Computational Statistics, Spring 2015\\
+Homework 4: Kernels and Duals} 
+\date{}
+%\date{Due: February $30^{th}$, 4pm}
+
+
+
+
+\usepackage{amsfonts}\usepackage{capt-of}
+%\usepackage{url}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{bbm}
+\usepackage{enumerate}
+\newcommand{\carlos}[1]{\textcolor{red}{Carlos: #1}}
+\newcommand{\field}[1]{\mathbb{#1}} 
+\newcommand{\hide}[1]{#1}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\providecommand{\m}[1]{\mathbf{#1}}
+\providecommand{\norm}[1]{\left\|#1\right\|}
+\providecommand{\sign}[1]{\text{sign}\left(#1\right)}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\providecommand{\what}{\m{\hat{w}}}
+\providecommand{\dw}{\Delta w}
+\providecommand{\dmw}{\Delta \m{w}}
+\providecommand{\hy}{\hat{y}}
+\end_preamble
+\options ruled
+\use_default_options false
+\begin_modules
+algorithm2e
+theorems-starred
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package none
+\inputencoding auto
+\fontencoding default
+\font_roman default
+\font_sans default
+\font_typewriter courier
+\font_math auto
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks false
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref section
+\pdf_pdfusetitle false
+\papersize letterpaper
+\use_geometry true
+\use_package amsmath 2
+\use_package amssymb 0
+\use_package cancel 0
+\use_package esint 1
+\use_package mathdots 0
+\use_package mathtools 0
+\use_package mhchem 0
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\reals}{\mathbf{R}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\integers}{\mathbf{Z}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\naturals}{\mathbf{N}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\rationals}{\mathbf{Q}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ca}{\mathcal{A}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cb}{\mathcal{B}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\cc}{\mathcal{C}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\cd}{\mathcal{D}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ce}{\mathcal{E}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cf}{\mathcal{F}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cg}{\mathcal{G}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ch}{\mathcal{H}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ci}{\mathcal{I}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cj}{\mathcal{J}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ck}{\mathcal{K}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cl}{\mathcal{L}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cm}{\mathcal{M}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cn}{\mathcal{N}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\co}{\mathcal{O}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cp}{\mathcal{P}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cq}{\mathcal{Q}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\calr}{\mathcal{R}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cs}{\mathcal{S}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ct}{\mathcal{T}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cu}{\mathcal{U}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cv}{\mathcal{V}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cw}{\mathcal{W}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cx}{\mathcal{X}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cy}{\mathcal{Y}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cz}{\mathcal{Z}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ind}[1]{1(#1)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\pr}{\mathbb{P}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\predsp}{\cy}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\outsp}{\cy}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\prxy}{P_{\cx\times\cy}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\prx}{P_{\cx}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\prygivenx}{P_{\cy\mid\cx}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ex}{\mathbb{E}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\var}{\textrm{Var}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\cov}{\textrm{Cov}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sgn}{\textrm{sgn}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sign}{\textrm{sign}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\kl}{\textrm{KL}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\law}{\mathcal{L}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\eps}{\varepsilon}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\as}{\textrm{ a.s.}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\io}{\textrm{ i.o.}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ev}{\textrm{ ev.}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\convd}{\stackrel{d}{\to}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\eqd}{\stackrel{d}{=}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\del}{\nabla}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\loss}{\ell}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\risk}{R}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\emprisk}{\hat{R}_{\ell}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\lossfnl}{L}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\emplossfnl}{\hat{L}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\empminimizer}[1]{\hat{#1}_{\ell}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\minimizer}[1]{#1_{*}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\etal}{\textrm{et. al.}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\tr}{\operatorname{tr}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\trace}{\operatorname{trace}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\diag}{\text{diag}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\rank}{\text{rank}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\linspan}{\text{span}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\proj}{\text{Proj}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\argmax}{\operatornamewithlimits{arg\, max}}
+{\mbox{argmax}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\argmin}{\operatornamewithlimits{arg\, min}}
+{\mbox{argmin}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\bfx}{\mathbf{x}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\bfy}{\mathbf{y}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\bfl}{\mathbf{\lambda}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\bfm}{\mathbf{\mu}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\calL}{\mathcal{L}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vw}{\boldsymbol{w}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vx}{\boldsymbol{x}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vxi}{\boldsymbol{\xi}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\valpha}{\boldsymbol{\alpha}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vbeta}{\boldsymbol{\beta}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vsigma}{\boldsymbol{\sigma}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vmu}{\boldsymbol{\mu}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vtheta}{\boldsymbol{\theta}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vd}{\boldsymbol{d}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vs}{\boldsymbol{s}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vt}{\boldsymbol{t}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vh}{\boldsymbol{h}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\ve}{\boldsymbol{e}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vf}{\boldsymbol{f}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vg}{\boldsymbol{g}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vz}{\boldsymbol{z}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vk}{\boldsymbol{k}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\va}{\boldsymbol{a}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vb}{\boldsymbol{b}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vv}{\boldsymbol{v}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\vy}{\boldsymbol{y}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\hil}{\ch}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\rkhs}{\hil}
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+maketitle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Due: Tuesday, March 3, 2015, at 4pm (Submit via NYU Classes)
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Instructions
+\series default
+: Your answers to the questions below, including plots and mathematical
+ work, should be submitted as a single PDF file.
+ You may include your code inline or submit it as a separate file.
+ You may either scan hand-written work or, preferably, write your answers
+ using software that typesets mathematics (e.g.
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+LaTeX
+\end_layout
+
+\end_inset
+
+, LyX, or MathJax via iPython).
+ 
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+The problem set begins with a review of some important linear algebra concepts
+ that we routinely use in machine learning and statistics.
+ The solutions to each of these problems is at most a few lines long, and
+ we've tried to give helpful hints.
+ Everything leads up to proving a basic and important property of positive
+ semidefinite matrices.
+ These aren't meant to be challenging problems -- just the opposite, in
+ fact -- we'd like this material to be second nature to you.
+ We next have a couple problems on kernel methods, both of which should
+ be quite easy if you understand the context.
+ The last problem is both an introduction to 
+\begin_inset Quotes eld
+\end_inset
+
+novelty detection
+\begin_inset Quotes erd
+\end_inset
+
+ algorithms, as well as an exercise in the machinery of Lagrangian duality.
+ This is the only problem that has a lengthy solution.
+ 
+\end_layout
+
+\begin_layout Section
+Positive Semidefinite Matrices
+\end_layout
+
+\begin_layout Standard
+In statistics and machine learning, we use positive semidefinite matrices
+ a lot.
+ Let's recall some definitions from linear algebra that will be useful here:
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Definition
+A set of vectors 
+\begin_inset Formula $\left\{ x_{1},\ldots,x_{n}\right\} $
+\end_inset
+
+ is 
+\series bold
+orthonormal
+\series default
+ if 
+\begin_inset Formula $\left\langle x_{i},x_{i}\right\rangle =1$
+\end_inset
+
+ for any 
+\begin_inset Formula $i\in\left\{ 1,\ldots,n\right\} $
+\end_inset
+
+ (i.e.
+ 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ has unit norm), and for any 
+\begin_inset Formula $i,j\in\left\{ 1,\ldots,n\right\} $
+\end_inset
+
+ with 
+\begin_inset Formula $i\neq j$
+\end_inset
+
+ we have 
+\begin_inset Formula $\left\langle x_{i},x_{j}\right\rangle =0$
+\end_inset
+
+ (i.e.
+ 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{j}$
+\end_inset
+
+ are orthogonal).
+\end_layout
+
+\begin_layout Definition
+Note that if the vectors are column vectors in a Euclidean space, we can
+ write this as 
+\begin_inset Formula $x_{i}^{T}x_{j}=\ind{i\neq j}$
+\end_inset
+
+ for all 
+\begin_inset Formula $i,j\in\left\{ 1,\ldots,n\right\} $
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Definition
+A matrix is 
+\series bold
+orthogonal 
+\series default
+if it is a square matrix with orthonormal columns.
+ 
+\end_layout
+
+\begin_layout Definition
+It follows from the definition that if a matrix 
+\begin_inset Formula $M\in\reals^{n\times n}$
+\end_inset
+
+ is orthogonal, then 
+\begin_inset Formula $M^{T}M=I$
+\end_inset
+
+, where 
+\begin_inset Formula $I$
+\end_inset
+
+ is the 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ identity matrix.
+ Thus 
+\begin_inset Formula $M^{T}=M^{-1}$
+\end_inset
+
+, and so 
+\begin_inset Formula $MM^{T}=I$
+\end_inset
+
+ as well.
+ 
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Definition
+A matrix 
+\begin_inset Formula $M$
+\end_inset
+
+ is 
+\series bold
+symmetric 
+\series default
+if 
+\begin_inset Formula $M=M^{T}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout --Separator--
+
+\end_layout
+
+\begin_layout Definition
+For a square matrix 
+\begin_inset Formula $M$
+\end_inset
+
+, if 
+\begin_inset Formula $Mv=\lambda v$
+\end_inset
+
+ for some column vector 
+\begin_inset Formula $v$
+\end_inset
+
+ and scalar 
+\begin_inset Formula $\lambda$
+\end_inset
+
+, then 
+\begin_inset Formula $v$
+\end_inset
+
+ is called an 
+\series bold
+eigenvector
+\series default
+ of 
+\begin_inset Formula $M$
+\end_inset
+
+ and 
+\begin_inset Formula $v$
+\end_inset
+
+ is the corresponding 
+\series bold
+eigenvalue
+\series default
+.
+ 
+\end_layout
+
+\begin_layout Theorem
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+[Spectral Theorem]
+\end_layout
+
+\end_inset
+
+A real, symmetric matrix 
+\begin_inset Formula $M\in\reals^{n\times n}$
+\end_inset
+
+ can be diagonalized as 
+\begin_inset Formula $M=Q\Sigma Q^{T}$
+\end_inset
+
+, where 
+\begin_inset Formula $Q\in\reals^{n\times n}$
+\end_inset
+
+ is an orthogonal matrix whose columns are a set of orthonormal eigenvectors
+ of 
+\begin_inset Formula $M$
+\end_inset
+
+, and 
+\begin_inset Formula $\Sigma$
+\end_inset
+
+ is a diagonal matrix of the corresponding eigenvalues.
+ 
+\end_layout
+
+\begin_layout Definition
+A real, symmetric matrix 
+\begin_inset Formula $M\in\reals^{n\times n}$
+\end_inset
+
+ is 
+\series bold
+positive semidefinite (psd)
+\series default
+ if for any 
+\begin_inset Formula $x\in\reals^{n}$
+\end_inset
+
+, 
+\begin_inset Formula 
+\[
+x^{T}Mx\ge0.
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Definition
+Note that unless otherwise specified, when a matrix is described as positive
+ semidefinite, we are implicitly assuming it is real and symmetric (or complex
+ and Hermitian in certain contexts, though not here).
+\end_layout
+
+\begin_layout Definition
+As an exercise in matrix multiplication, note that for any matrix 
+\begin_inset Formula $A$
+\end_inset
+
+ with columns 
+\begin_inset Formula $a_{1},\ldots,a_{d}$
+\end_inset
+
+, that is 
+\begin_inset Formula 
+\[
+A=\begin{pmatrix}| &  & |\\
+a_{1} & \cdots & a_{d}\\
+| &  & |
+\end{pmatrix}\in\reals^{n\times d},
+\]
+
+\end_inset
+
+we have
+\begin_inset Formula 
+\[
+A^{T}MA=\begin{pmatrix}a_{1}^{T}Ma_{1} & a_{1}^{T}Ma_{2} & \cdots & a_{1}^{T}Ma_{d}\\
+a_{2}^{T}Ma_{1} & a_{2}^{T}Ma_{2} & \cdots & a_{2}^{T}Ma_{d}\\
+\vdots & \vdots & \cdots & \vdots\\
+a_{d}^{T}Ma_{1} & a_{d}^{T}Ma_{2} & \cdots & a_{d}^{T}Ma_{d}
+\end{pmatrix}.
+\]
+
+\end_inset
+
+So 
+\begin_inset Formula $M$
+\end_inset
+
+ is psd if and only if for any 
+\begin_inset Formula $A\in\reals^{n\times d}$
+\end_inset
+
+, we have 
+\begin_inset Formula $\diag(A^{T}MA)=\left(a_{1}^{T}Ma_{1},\ldots,a_{d}^{T}Ma_{d}\right)^{T}\succeq0$
+\end_inset
+
+, where 
+\begin_inset Formula $\succeq$
+\end_inset
+
+ is elementwise inequality, and 
+\begin_inset Formula $0$
+\end_inset
+
+ is a 
+\begin_inset Formula $d\times1$
+\end_inset
+
+ column vector of 
+\begin_inset Formula $0$
+\end_inset
+
+'s .
+ 
+\end_layout
+
+\begin_layout Enumerate
+Give an example of an orthogonal matrix that is not symmetric.
+ (Hint: You can use a 
+\begin_inset Formula $2\times2$
+\end_inset
+
+ matrix with only 
+\begin_inset Formula $0$
+\end_inset
+
+'s and 
+\begin_inset Formula $1$
+\end_inset
+
+'s.) 
+\end_layout
+
+\begin_layout Enumerate
+Use the definition of a psd matrix and the spectral theorem to show that
+ all eigenvalues of a positive semidefinite matrix are non-negative.
+ [Hint: In the definition of psd, make a good choice for 
+\begin_inset Formula $x$
+\end_inset
+
+.] 
+\end_layout
+
+\begin_layout Enumerate
+In this problem we show that a psd matrix is a matrix version of a non-negative
+ scalar, in that they both have a 
+\begin_inset Quotes eld
+\end_inset
+
+square root
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Show that a symmetric matrix 
+\begin_inset Formula $M$
+\end_inset
+
+ can be expressed as 
+\begin_inset Formula $M=BB^{T}$
+\end_inset
+
+ for some matrix 
+\begin_inset Formula $B$
+\end_inset
+
+, if and only if 
+\begin_inset Formula $M$
+\end_inset
+
+ is psd.
+ [Hint: To show 
+\begin_inset Formula $M=BB^{T}$
+\end_inset
+
+ implies 
+\begin_inset Formula $M$
+\end_inset
+
+ is psd, use the fact that for any vector 
+\begin_inset Formula $v$
+\end_inset
+
+, 
+\begin_inset Formula $v^{T}v\ge0$
+\end_inset
+
+.
+ To show that 
+\begin_inset Formula $M$
+\end_inset
+
+ psd implies 
+\begin_inset Formula $M=BB^{T}$
+\end_inset
+
+ for some 
+\begin_inset Formula $B$
+\end_inset
+
+, use the Spectral Theorem.] 
+\end_layout
+
+\begin_layout Section
+Kernel Matrices
+\end_layout
+
+\begin_layout Standard
+(Problem from Michael Jordan's Stat 241b Problem Set #1, Spring 2004)
+\end_layout
+
+\begin_layout Standard
+The following problem will gives us some additional insight into what informatio
+n is encoded in the kernel matrix.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Consider a set of vectors 
+\begin_inset Formula $S=\{x_{1},\ldots,x_{m}\}$
+\end_inset
+
+.
+ Let 
+\begin_inset Formula $X$
+\end_inset
+
+ denote the matrix whose rows are these vectors.
+ Form the Gram matrix 
+\begin_inset Formula $K=XX^{T}$
+\end_inset
+
+.
+ Show that knowing 
+\begin_inset Formula $K$
+\end_inset
+
+ is equivalent to knowing the set of pairwise distances among the vectors
+ in 
+\begin_inset Formula $S$
+\end_inset
+
+ as well as the vector lengths.
+ [Hint: The distance between 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+ is given by 
+\begin_inset Formula $d(x,y)=\|x-y\|$
+\end_inset
+
+, and the norm of a vector 
+\begin_inset Formula $x$
+\end_inset
+
+ is defined as 
+\begin_inset Formula $\|x\|=$
+\end_inset
+
+
+\begin_inset Formula $\sqrt{\left\langle x,x\right\rangle }=\sqrt{x^{T}x}$
+\end_inset
+
+.] 
+\end_layout
+
+\begin_layout Section
+Kernel Ridge Regression
+\end_layout
+
+\begin_layout Standard
+In this problem, we complete the kernelization of ridge regression that
+ we discussed in Lab (see 
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://davidrosenberg.github.io/ml2015/docs/4.Lab.kernelizations.pdf
+\end_layout
+
+\end_inset
+
+).
+ To recap, the ridge regression objective function is given by
+\begin_inset Formula 
+\[
+J(w)=||Xw-y||^{2}+\lambda||w||^{2},
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $X\in\reals^{n\times d}$
+\end_inset
+
+ is the design matrix, and 
+\begin_inset Formula $\lambda>0$
+\end_inset
+
+ is the regularization parameter.
+ We showed that the minimizer is given by 
+\begin_inset Formula $w^{*}=X^{T}\alpha^{*}$
+\end_inset
+
+, where 
+\begin_inset Formula $\alpha^{*}=(\lambda I+XX^{T})^{-1}y$
+\end_inset
+
+.
+ We can replace the Gram matrix 
+\begin_inset Formula $XX^{T}$
+\end_inset
+
+ by the data kernel matrix corresponding to any kernel satisfying Mercer's
+ theorem.
+ We also showed that the vector of predictions on the training points is
+ given by 
+\begin_inset Formula $Xw=\left(XX^{T}\right)\left(\lambda I+XX^{T}\right)^{-1}y$
+\end_inset
+
+, which is also 
+\begin_inset Quotes eld
+\end_inset
+
+kernelized
+\begin_inset Quotes erd
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Give an expression for the prediction 
+\begin_inset Formula $f(x)=x^{T}w^{*}$
+\end_inset
+
+ for a new point 
+\begin_inset Formula $x$
+\end_inset
+
+, not in the training set.
+ The expression should only involve 
+\begin_inset Formula $x$
+\end_inset
+
+ via inner products with other 
+\begin_inset Formula $x$
+\end_inset
+
+'s.
+ [Hint: It is often convenient to define the column vector
+\begin_inset Formula 
+\[
+k_{x}=\begin{pmatrix}x^{T}x_{1}\\
+\vdots\\
+x^{T}x_{n}
+\end{pmatrix}
+\]
+
+\end_inset
+
+to simplify the expression.] 
+\end_layout
+
+\begin_layout Section
+Novelty Detection
+\end_layout
+
+\begin_layout Standard
+(Problem derived from Michael Jordan's Stat 241b Problem Set #2, Spring
+ 2004)
+\end_layout
+
+\begin_layout Standard
+A novelty detection algorithm can be based on an algorithm that finds the
+ smallest possible sphere containing the data in feature space.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Let 
+\begin_inset Formula $\phi:\cx\to F$
+\end_inset
+
+ be our feature map, mapping elements of the input space into our 
+\begin_inset Quotes eld
+\end_inset
+
+feature space
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $F$
+\end_inset
+
+, which is equipped with an inner product.
+ Formulate the novelty detection algorithm described above as an optimization
+ problem.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Give the Lagrangian for this problem, and write an equivalent, unconstrained
+ 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Formula $\inf\sup$
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+ version of the optimization problem.
+\end_layout
+
+\begin_layout Enumerate
+Show that we have strong duality and thus we will have an equivalent optimizatio
+n problem if we swap the inf and the sup.
+ [Hint: Use Slater's qualification conditions.] 
+\end_layout
+
+\begin_layout Enumerate
+Solve the inner minimization problem and give the dual optimization problem.
+ [Note: You may find it convenient to define the kernel function 
+\begin_inset Formula $k(x_{i},x_{j})=\left\langle \phi(x_{i}),\phi(x_{j})\right\rangle $
+\end_inset
+
+ and to write your final problem in terms of the corresponding kernel matrix
+ 
+\begin_inset Formula $K$
+\end_inset
+
+ to simplify notation.] 
+\end_layout
+
+\begin_layout Enumerate
+Write an expression for the optimal sphere in terms of the solution to the
+ dual problem.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Write down the complementary slackness conditions for this problem, and
+ characterize the points that are the 
+\begin_inset Quotes eld
+\end_inset
+
+support vectors
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Briefly explain how you would apply this algorithm in practice to detect
+ 
+\begin_inset Quotes eld
+\end_inset
+
+novel
+\begin_inset Quotes erd
+\end_inset
+
+ instances.
+\end_layout
+
+\begin_layout Enumerate
+[Optional] Redo this problem allowing some of the data to lie outside of
+ the sphere, where the number of points outside the sphere can be increased
+ or decreased by adjusting a parameter.
+ (Hint: Use slack variables).
+ 
+\end_layout
+
+\begin_layout Section
+Feedback (not graded)
+\end_layout
+
+\begin_layout Enumerate
+Approximately how long did it take to complete this assignment?
+\end_layout
+
+\begin_layout Enumerate
+Any other feedback?
+\end_layout
+
+\end_body
+\end_document
